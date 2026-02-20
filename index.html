@@ -24,15 +24,22 @@
     .edit-mode .quick-block { animation: shake 0.3s infinite; background: #94a3b8; }
 
     /* Exercise Card */
-    .exercise-card { background: white; border-radius: 16px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; transition: all 0.3s ease; }
+    .exercise-card { background: white; border-radius: 16px; padding: 15px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; }
     .exercise-card.minimized { background: #f0fdf4; border: 1px solid var(--success); padding: 10px 15px; }
     
-    /* SET ROW with PR Logic */
-    .set-row { display: grid; grid-template-columns: 20px 50px 1fr 1fr 20px; gap: 8px; align-items: center; margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 8px; }
+    /* SET ROW */
+    .set-row { display: grid; grid-template-columns: 20px 50px 1fr 1fr 35px 20px; gap: 8px; align-items: center; margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 8px; }
+    .set-row.done { background: #dcfce7; }
     .pr-ghost { font-size: 9px; color: #9ca3af; opacity: 0.7; font-weight: bold; text-align: center; }
     .set-row input { width: 100%; border: 1px solid #ddd; border-radius: 5px; padding: 5px; text-align: center; font-size: 13px; }
+    .tick-btn { background: none; border: none; font-size: 18px; cursor: pointer; padding: 0; }
 
-    /* Stats & Chart */
+    /* Timer Overlay */
+    #timerOverlay { position: fixed; inset: 0; background: rgba(30, 41, 59, 0.98); color: white; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 3000; text-align: center; }
+    #timerVal { font-size: 80px; font-weight: 800; margin: 10px 0; color: var(--primary); }
+    .rest-mote { padding: 20px; font-style: italic; color: #cbd5e1; max-width: 80%; }
+
+    /* Stats */
     .stats-card { background: white; padding: 16px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
     .metrics-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
     .metrics-grid input { width: 100%; padding: 8px; border: 1px solid #eee; border-radius: 8px; text-align: center; font-weight: bold; color: var(--primary); }
@@ -58,7 +65,7 @@
 <header>PPL Pro Tracker</header>
 
 <div id="categoryPage" class="page active">
-  <div class="motivation-box" id="mote-top">"Loading greatness..."</div>
+  <div class="motivation-box" id="mote-top">"Success starts today."</div>
   <div class="category-grid" style="display:grid; gap:12px">
     <div onclick="openWorkout('Push')" style="background:white; padding:25px; border-radius:16px; font-weight:bold; font-size:18px; box-shadow:0 4px 6px rgba(0,0,0,0.05); cursor:pointer;">🚀 PUSH</div>
     <div onclick="openWorkout('Pull')" style="background:white; padding:25px; border-radius:16px; font-weight:bold; font-size:18px; box-shadow:0 4px 6px rgba(0,0,0,0.05); cursor:pointer;">🎣 PULL</div>
@@ -67,7 +74,7 @@
 </div>
 
 <div id="workoutPage" class="page">
-  <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
     <button onclick="goHome()" style="background:none; border:none; color:var(--primary); font-weight:bold;">← Back</button>
     <button onclick="toggleEditMode()" id="editBtn" style="background:#eee; border:none; padding:5px 12px; border-radius:8px; font-size:11px; font-weight:bold;">Edit Mode</button>
   </div>
@@ -97,9 +104,15 @@
 
   <div class="stats-card">
     <h4 style="margin:0;">Workout History</h4>
-    <p style="font-size: 10px; color: #666; margin: 5px 0;">Tap to see Personal Records for that day</p>
     <div class="calendar-grid" id="calendarGrid"></div>
   </div>
+</div>
+
+<div id="timerOverlay">
+    <h2>RESTING...</h2>
+    <div id="timerVal">60</div>
+    <div class="rest-mote" id="restMote">Take a deep breath. Focus on the next set.</div>
+    <button onclick="stopTimer()" style="background:white; color:var(--dark); border:none; padding:12px 30px; border-radius:30px; font-weight:bold; cursor:pointer; margin-top:20px;">SKIP REST</button>
 </div>
 
 <div id="motivationPopup" class="overlay" onclick="this.style.display='none'">
@@ -107,14 +120,13 @@
         <div style="font-size:50px;">🔥</div>
         <h2 id="moteTitle">BEAST MODE!</h2>
         <p id="moteQuote" style="font-style:italic; font-size:18px; margin:20px 0;"></p>
-        <button onclick="document.getElementById('motivationPopup').style.display='none'" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold;">KEEP CRUSHING IT</button>
+        <button onclick="document.getElementById('motivationPopup').style.display='none'" style="width:100%; padding:12px; background:var(--primary); color:white; border:none; border-radius:10px; font-weight:bold;">NEXT EXERCISE</button>
     </div>
 </div>
 
 <div id="historyPopup" class="overlay" onclick="this.style.display='none'">
     <div class="modal" onclick="event.stopPropagation()">
         <h3 id="histDate">Details</h3>
-        <p style="font-size: 11px; color: var(--success); margin-bottom: 10px;">Daily Personal Records</p>
         <div id="histBody" style="text-align:left; max-height:300px; overflow-y:auto;"></div>
         <button onclick="document.getElementById('historyPopup').style.display='none'" style="width:100%; margin-top:15px; padding:10px; background:var(--dark); color:white; border:none; border-radius:10px;">Close</button>
     </div>
@@ -127,6 +139,7 @@
 
 <script>
 const quotes = ["No pain, no gain!", "Stay consistent!", "Shut up and train.", "Sore today, strong tomorrow.", "Keep pushing!"];
+const restQuotes = ["Inhale confidence, exhale doubt.", "Oxygen is fuel. Breathe deep.", "Visualize your next successful set.", "Relax your muscles, keep the mind sharp.", "Almost time to dominate again."];
 
 let state = JSON.parse(localStorage.getItem('gymPPL_vUltimate')) || {
     customExercises: { 'Push': ['Bench Press'], 'Pull': ['Pull Ups'], 'Legs': ['Squats'] },
@@ -134,6 +147,7 @@ let state = JSON.parse(localStorage.getItem('gymPPL_vUltimate')) || {
 };
 
 let editMode = false;
+let timerInt;
 
 function save() { localStorage.setItem('gymPPL_vUltimate', JSON.stringify(state)); }
 
@@ -149,6 +163,24 @@ function getBest(exName) {
         });
     });
     return maxKg === 0 ? "0*0" : `${maxKg}*${bestReps}`;
+}
+
+function startTimer() {
+    let count = 60;
+    document.getElementById('timerOverlay').style.display = 'flex';
+    document.getElementById('timerVal').textContent = count;
+    document.getElementById('restMote').textContent = restQuotes[Math.floor(Math.random()*restQuotes.length)];
+    clearInterval(timerInt);
+    timerInt = setInterval(() => {
+        count--;
+        document.getElementById('timerVal').textContent = count;
+        if(count <= 0) stopTimer();
+    }, 1000);
+}
+
+function stopTimer() {
+    clearInterval(timerInt);
+    document.getElementById('timerOverlay').style.display = 'none';
 }
 
 function toggleEditMode() {
@@ -172,7 +204,7 @@ function renderQuickBlocks() {
         b.className = 'quick-block';
         b.style = "position:relative; background:var(--primary); color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; cursor:pointer;";
         b.innerHTML = `<span>${name}</span><div class="edit-controls"><button class="icon-btn" onclick="event.stopPropagation(); renameEx(${idx})">✏️</button><button class="icon-btn" onclick="event.stopPropagation(); deleteEx(${idx})">🗑️</button></div>`;
-        b.onclick = () => { if(!editMode) { state.currentExercises.push({name, sets:[{kg:'', reps:''}], finished: false}); renderWorkout(); } };
+        b.onclick = () => { if(!editMode) { state.currentExercises.push({name, sets:[{kg:'', reps:'', done:false}], finished: false}); renderWorkout(); } };
         container.appendChild(b);
     });
     const add = document.createElement('div');
@@ -195,7 +227,7 @@ function renderWorkout() {
         if(ex.finished) {
             let bestThis = {kg:0, reps:0};
             ex.sets.forEach(s => { if(Number(s.kg) >= bestThis.kg) bestThis = s; });
-            card.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><b>✅ ${ex.name}</b> <small>Best: ${bestThis.kg}kg x ${bestThis.reps}</small></div>`;
+            card.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center;"><b>✅ ${ex.name}</b> <small>Session Best: ${bestThis.kg}kg x ${bestThis.reps}</small></div>`;
         } else {
             const ghost = getBest(ex.name);
             card.innerHTML = `<div style="display:flex; justify-content:space-between;"><b>${ex.name}</b><span onclick="state.currentExercises.splice(${ei},1); renderWorkout()" style="color:var(--danger)">✕</span></div>
@@ -204,8 +236,12 @@ function renderWorkout() {
             <button onclick="finishEx(${ei})" style="width:100%; background:var(--success); color:white; border:none; padding:10px; border-radius:8px; margin-top:10px; font-weight:bold;">FINISH EXERCISE</button>`;
             const setBox = card.querySelector(`#sets-${ei}`);
             ex.sets.forEach((s, si) => {
-                const row = document.createElement('div'); row.className = 'set-row';
-                row.innerHTML = `<small>${si+1}</small><div class="pr-ghost">${ghost}</div><input type="number" placeholder="kg" value="${s.kg}" oninput="state.currentExercises[${ei}].sets[${si}].kg=this.value"><input type="number" placeholder="reps" value="${s.reps}" oninput="state.currentExercises[${ei}].sets[${si}].reps=this.value"><span onclick="state.currentExercises[${ei}].sets.splice(${si},1); renderWorkout()">✕</span>`;
+                const row = document.createElement('div'); row.className = `set-row ${s.done?'done':''}`;
+                row.innerHTML = `<small>${si+1}</small><div class="pr-ghost">${ghost}</div>
+                    <input type="number" placeholder="kg" value="${s.kg}" oninput="state.currentExercises[${ei}].sets[${si}].kg=this.value">
+                    <input type="number" placeholder="reps" value="${s.reps}" oninput="state.currentExercises[${ei}].sets[${si}].reps=this.value">
+                    <button class="tick-btn" onclick="tickSet(${ei},${si})">${s.done?'✅':'✔️'}</button>
+                    <span onclick="state.currentExercises[${ei}].sets.splice(${si},1); renderWorkout()">✕</span>`;
                 setBox.appendChild(row);
             });
         }
@@ -214,7 +250,14 @@ function renderWorkout() {
     save();
 }
 
-function addSet(ei) { state.currentExercises[ei].sets.push({kg:'', reps:''}); renderWorkout(); }
+function tickSet(ei, si) {
+    const isAlreadyDone = state.currentExercises[ei].sets[si].done;
+    state.currentExercises[ei].sets[si].done = !isAlreadyDone;
+    if(!isAlreadyDone) startTimer();
+    renderWorkout();
+}
+
+function addSet(ei) { state.currentExercises[ei].sets.push({kg:'', reps:'', done:false}); renderWorkout(); }
 
 function finishEx(ei) {
     state.currentExercises[ei].finished = true;
@@ -224,11 +267,7 @@ function finishEx(ei) {
 }
 
 function finishSession() {
-    state.history.push({ 
-        date: new Date().toISOString().split('T')[0], 
-        displayDate: new Date().toLocaleDateString(), 
-        exercises: JSON.parse(JSON.stringify(state.currentExercises)) 
-    });
+    state.history.push({ date: new Date().toISOString().split('T')[0], displayDate: new Date().toLocaleDateString(), exercises: JSON.parse(JSON.stringify(state.currentExercises)) });
     state.currentExercises = []; save(); goHome();
 }
 
@@ -264,15 +303,11 @@ function renderCalendar() {
 
 function openHistory(h) {
     document.getElementById('histDate').textContent = h.displayDate;
-    // Modified to only show the BEST lift for each exercise performed that day
     document.getElementById('histBody').innerHTML = h.exercises.map(ex => {
-        let dailyBest = {kg: 0, reps: 0};
-        ex.sets.forEach(s => {
-            if(Number(s.kg) > dailyBest.kg) { dailyBest.kg = Number(s.kg); dailyBest.reps = s.reps; }
-        });
-        return `<b>${ex.name}</b>: <span style="color:var(--success)">${dailyBest.kg}kg x ${dailyBest.reps}</span>`;
+        let best = {kg:0, reps:0};
+        ex.sets.forEach(s => { if(Number(s.kg) > best.kg) best = s; });
+        return `<b>${ex.name}</b>: <span style="color:var(--success)">Peak ${best.kg}kg x ${best.reps}</span>`;
     }).join('<hr style="border:0; border-top:1px solid #eee; margin:5px 0;">');
-    
     document.getElementById('historyPopup').style.display = 'flex';
 }
 
