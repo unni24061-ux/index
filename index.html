@@ -48,6 +48,7 @@
     .timer-toggles { display: flex; gap: 10px; margin-bottom: 20px; }
     .timer-toggles button { background: #334155; color: white; border: 1px solid #475569; padding: 8px 15px; border-radius: 8px; font-weight: bold; }
     .timer-toggles button.active { background: var(--primary); border-color: var(--primary); }
+    .rest-mote { padding: 15px; font-style: italic; color: #cbd5e1; max-width: 80%; font-size: 14px; }
 
     .stats-card { background: white; padding: 16px; border-radius: 16px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
     .metrics-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
@@ -193,7 +194,6 @@ function getBest(exName) {
     return maxKg === 0 ? "—" : `${maxKg}k`;
 }
 
-// Logic: Check if the exercise was done in the immediate PREVIOUS session for THIS specific group
 function wasUsedLastTime(name, group) {
     const groupHistory = state.history.filter(h => h.group === group).reverse();
     return groupHistory.length > 0 && groupHistory[0].exercises.some(ex => ex.name === name);
@@ -257,6 +257,13 @@ function renderQuickBlocks() {
         b.onclick = () => { if(!document.getElementById('workoutPage').classList.contains('edit-mode')) { state.currentExercises.push({name, sets:[{kg:'', reps:'', done:false}], finished: false}); renderWorkout(); } };
         container.appendChild(b);
     });
+    
+    // Add New button restored here!
+    const addBtn = document.createElement('div');
+    addBtn.style = "background:#94a3b8; color:white; padding:12px; border-radius:10px; text-align:center; font-weight:bold; cursor:pointer;";
+    addBtn.textContent = "+ Add New";
+    addBtn.onclick = () => { const n = prompt("Exercise Name:"); if(n){ state.customExercises[state.activeGroup].push(n); save(); renderQuickBlocks(); } };
+    container.appendChild(addBtn);
 }
 
 function renameEx(i) { const n = prompt("Rename:", state.customExercises[state.activeGroup][i]); if(n){ state.customExercises[state.activeGroup][i]=n; save(); renderQuickBlocks(); } }
