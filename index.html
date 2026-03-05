@@ -1,40 +1,107 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>ULTRA TRACKER PRO</title>
-  
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/2964/2964514.png">
-  <link rel="manifest" href="data:application/manifest+json;base64,ewogICJuYW1lIjogIlVsdHJhIFRyYWNrZXIgUHJvIiwKICAic2hvcnRfbmFtZSI6ICJUcmFja2VyIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMwYTBhMGMiLAogICJ0aGVtZV9jb2xvciI6ICIjMGEwYTBjIiwKICAiaWNvbnMiOiBbIHsgImRlc3RpbmF0aW9uIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzI5NjQvMjk2NDUxNC5wbmciLCAic2l6ZXMiOiAiNTEyeDUxMiIsICJ0eXBlIjogImltYWdlL3BuZyIgfSBdCn0=">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TRACKER</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  
-  <style>
-    :root {
-      --bg: #0a0a0c; --card: #16161a; --accent: #3b82f6; --success: #10b981; --danger: #ef4444;
-      --text: #f8fafc; --text-dim: #94a3b8;
-      --chest: #ef4444; --back: #3b82f6; --shoulders: #f59e0b;
-      --legs: #10b981; --arms: #8b5cf6; --core: #06b6d4;
-    }
+    <header id="app-header">
+        <h1 id="header-title">Workout</h1>
+        <button id="header-action-btn" class="hidden"><span class="material-icons-round">add</span></button>
+    </header>
 
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; font-family: 'Inter', -apple-system, sans-serif; }
-    body { margin: 0; background: var(--bg); color: var(--text); overflow-x: hidden; }
+    <main id="app-content">
+        <section id="view-calendar" class="view active">
+            <div id="calendar-container">
+                </div>
+            <div class="streak-marker">Current Streak: <span id="streak-count">0</span> Days</div>
+        </section>
 
-    header { background: var(--card); padding: 15px; text-align: center; font-weight: 800; border-bottom: 1px solid #2d2d35; position: sticky; top: 0; z-index: 100; letter-spacing: 1px; }
+        <section id="view-daily-workout" class="view">
+            <h2 id="current-date-display"></h2>
+            <div id="daily-exercises-list">
+                </div>
+            <button id="complete-day-btn" class="btn-primary">Complete Day</button>
+        </section>
 
-    .page { display: none; padding: 15px; padding-bottom: 90px; max-width: 500px; margin: 0 auto; animation: fade 0.2s ease; }
-    .page.active { display: block; }
-    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+        <section id="view-muscle-groups" class="view">
+            <div class="grid-list">
+                <div class="muscle-card" data-part="chest" style="border-left: 5px solid #FF5252;">Chest</div>
+                <div class="muscle-card" data-part="back" style="border-left: 5px solid #448AFF;">Back</div>
+                <div class="muscle-card" data-part="shoulder" style="border-left: 5px solid #FFC107;">Shoulder</div>
+                <div class="muscle-card" data-part="triceps" style="border-left: 5px solid #69F0AE;">Triceps</div>
+                <div class="muscle-card" data-part="biceps" style="border-left: 5px solid #E040FB;">Biceps</div>
+                <div class="muscle-card" data-part="core" style="border-left: 5px solid #00BCD4;">Core</div>
+            </div>
+        </section>
 
-    /* Calendar */
-    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
-    .cal-cell { aspect-ratio: 1; background: var(--card); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid #222; }
-    .cal-cell.today { border: 2px solid var(--accent); }
-    .dot-box { display: flex; gap: 2px; margin-top: 4px; height: 4px; }
-    .dot { width: 4px; height: 4px; border-radius: 50%; }
+        <section id="view-progression" class="view">
+            <div class="stats-row">
+                <div class="stat-box">Current<br><span id="current-bw">75</span> kg</div>
+                <div class="stat-box">Goal<br><span id="goal-bw">80</span> kg</div>
+            </div>
+            <canvas id="progression-chart"></canvas>
+            <button class="btn-secondary" onclick="openInputModal('Update Weight')">Update Weight</button>
+        </section>
+        
+        </main>
+
+    <nav id="bottom-nav">
+        <a href="#workout" class="nav-item active" data-target="workout">
+            <span class="material-icons-round">calendar_today</span>
+            <span>Workout</span>
+        </a>
+        <a href="#progression" class="nav-item" data-target="progression">
+            <span class="material-icons-round">trending_up</span>
+            <span>Progress</span>
+        </a>
+        <a href="#history" class="nav-item" data-target="history">
+            <span class="material-icons-round">history</span>
+            <span>History</span>
+        </a>
+    </nav>
+
+    <div id="custom-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="modal-title">Input</h3>
+            <div id="modal-body">
+                <div class="number-selector">
+                    <button class="btn-icon" onclick="adjustValue(-2.5)"><span class="material-icons-round">remove</span></button>
+                    <input type="number" id="modal-input-val" value="20" step="2.5" readonly>
+                    <button class="btn-icon" onclick="adjustValue(2.5)"><span class="material-icons-round">add</span></button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-text" onclick="closeModal()">Cancel</button>
+                <button class="btn-text" onclick="saveModal()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="timer-modal" class="modal-overlay hidden">
+        <div class="modal-content timer-content">
+            <h3>Rest</h3>
+            <div id="timer-display">00:30</div>
+            <p id="motivation-text">"Push harder than yesterday if you want a different tomorrow."</p>
+            <div class="timer-options">
+                <button onclick="startTimer(30)">30s</button>
+                <button onclick="startTimer(45)">45s</button>
+                <button onclick="startTimer(60)">60s</button>
+                <button onclick="startTimer(90)">90s</button>
+            </div>
+            <button class="btn-text" onclick="skipTimer()">Skip</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+  .dot { width: 4px; height: 4px; border-radius: 50%; }
 
     /* Muscle Buttons */
     .muscle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -527,4 +594,5 @@ function moveMonth(d) { curDate.setMonth(curDate.getMonth()+d); renderCal(); }
 showPage('calendarPage');
 </script>
 </body>
+
 </html>
