@@ -71,23 +71,23 @@
 
         /* Calendar specific */
         .cal-day {
+            min-height: 40px; /* Fallback for older Android WebViews */
             aspect-ratio: 1;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             position: relative;
-            border-radius: 6px; /* Scaled down for smaller squares */
+            border-radius: 6px;
         }
         .cal-day:active { transform: scale(0.92); background-color: #2c2c2e; }
         .dots-container {
-            display: flex; gap: 2px; position: absolute; bottom: 4px; /* Scaled down gap and position */
+            display: flex; gap: 2px; position: absolute; bottom: 4px; 
         }
-        .dot { width: 3px; height: 3px; border-radius: 50%; } /* Scaled down dots */
+        .dot { width: 3px; height: 3px; border-radius: 50%; }
 
         /* Set Table */
-        .set-row { display: grid; grid-template-columns: 40px 1fr 100px 100px 40px; align-items: center; gap: 4px; }
+        .set-row { display: grid; grid-template-columns: 40px 1fr 1fr 40px; align-items: center; justify-items: center; gap: 4px; }
         .number-spinner { display: flex; align-items: center; background: #2c2c2e; border-radius: 8px; overflow: hidden;}
         .number-spinner button { width: 30px; height: 32px; display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 18px; font-weight: bold;}
         .number-spinner button:active { background: #3f3f46; }
-        /* Ensuring select wheel is typable and clean */
         .number-spinner input { width: 40px; background: transparent; text-align: center; border: none; outline: none; color: white; font-weight: 500;}
 
         /* Progress ring */
@@ -112,7 +112,6 @@
                 <button id="cal-next" class="p-2 active:scale-95"><span class="material-icons-round">chevron_right</span></button>
             </div>
             
-            <!-- Compact Calendar Container to make squares smaller -->
             <div class="px-2 mt-4 max-w-[300px] mx-auto">
                 <div class="grid grid-cols-7 gap-2 text-center text-gray-400 text-[10px] font-bold tracking-wider mb-2">
                     <div>S</div><div>M</div><div>T</div><div>W</div><div>T</div><div>F</div><div>S</div>
@@ -199,7 +198,6 @@
                         <p class="text-[10px] text-gray-400 tracking-wide" id="day-detail-subtitle">WORKOUT SUMMARY</p>
                     </div>
                 </div>
-                <!-- Action Buttons: Finish & Add side-by-side at the top right -->
                 <div class="flex items-center gap-2">
                     <button onclick="completeDay()" id="btn-complete-day" class="hidden text-success font-bold tracking-wide text-[11px] flex items-center gap-1 bg-green-500/10 px-3 py-2 rounded-full active:bg-green-500/20 transition-colors">
                         <span class="material-icons-round text-sm">done_all</span> FINISH
@@ -361,6 +359,10 @@
             'biceps': [{id:'e26', name:'Barbell Curl'}, {id:'e27', name:'Dumbbell Curl'}, {id:'e28', name:'Hammer Curl'}, {id:'e29', name:'Preacher Curl'}, {id:'e30', name:'Concentration Curl'}],
             'core': [{id:'e31', name:'Crunches'}, {id:'e32', name:'Plank'}, {id:'e33', name:'Leg Raises'}, {id:'e34', name:'Russian Twists'}, {id:'e35', name:'Ab Wheel Rollout'}]
         };
+
+        const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const SHORT_MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
         /* --- STATE --- */
         let data = {
@@ -561,7 +563,9 @@
         function renderCalendar() {
             const year = state.currentDate.getFullYear();
             const month = state.currentDate.getMonth();
-            document.getElementById('cal-month-year').innerText = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            // Manual fallback string formatting to prevent Android WebView crash
+            document.getElementById('cal-month-year').innerText = `${MONTH_NAMES[month]} ${year}`;
             
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -570,7 +574,11 @@
             
             const todayStr = getYYYYMMDD(new Date());
 
-            for(let i=0; i<firstDay; i++) { grid.innerHTML += `<div></div>`; }
+            // Use createElement instead of innerHTML string appending to prevent losing event bindings
+            for(let i=0; i<firstDay; i++) { 
+                const emptyDiv = document.createElement('div');
+                grid.appendChild(emptyDiv);
+            }
 
             for(let i=1; i<=daysInMonth; i++) {
                 const dateObj = new Date(year, month, i);
@@ -597,19 +605,31 @@
                 dayEl.className = cellClasses;
                 dayEl.innerHTML = `<span>${i}</span> ${dotsHtml}`;
                 
-                let pressTimer;
-                dayEl.onmousedown = dayEl.ontouchstart = (e) => {
+                // Unified Pointer Events stop touch/mouse conflicts on Android
+                let pressTimer = null;
+                let isLongPress = false;
+
+                dayEl.onpointerdown = (e) => {
+                    isLongPress = false;
                     pressTimer = setTimeout(() => {
+                        isLongPress = true;
                         handleDayLongPress(dateStr);
-                        pressTimer = null;
-                    }, 800);
+                    }, 600); // 600ms long press
                 };
-                dayEl.onmouseup = dayEl.ontouchend = dayEl.onmouseleave = dayEl.ontouchcancel = (e) => {
-                    if (pressTimer) {
-                        clearTimeout(pressTimer);
+
+                dayEl.onpointerup = (e) => {
+                    if (pressTimer) clearTimeout(pressTimer);
+                    if (!isLongPress) {
                         openDayDetail(dateStr);
                     }
                 };
+
+                dayEl.onpointercancel = dayEl.onpointerleave = (e) => {
+                    if (pressTimer) clearTimeout(pressTimer);
+                };
+
+                // Prevent the default browser popup menu on long press
+                dayEl.oncontextmenu = (e) => e.preventDefault();
                 
                 grid.appendChild(dayEl);
             }
@@ -651,8 +671,15 @@
         /* --- VIEW: DAY DETAIL (Workout Logging) --- */
         function openDayDetail(dateStr) {
             state.selectedDateStr = dateStr;
-            const dateObj = new Date(dateStr);
-            document.getElementById('day-detail-title').innerText = dateObj.toLocaleDateString('en-US', {weekday: 'short', month: 'short', day: 'numeric'});
+            
+            // Explicit local time parsing prevents wrong-day timezone shifts
+            const [y, m, d] = dateStr.split('-');
+            const dateObj = new Date(y, m - 1, d);
+            
+            // Manual format to bypass WebView locale string bugs
+            const formattedDate = `${DAY_NAMES[dateObj.getDay()]}, ${SHORT_MONTH_NAMES[dateObj.getMonth()]} ${dateObj.getDate()}`;
+            document.getElementById('day-detail-title').innerText = formattedDate;
+            
             nav.push('view-day-detail');
         }
 
@@ -676,17 +703,52 @@
 
                 const isCollapsed = workoutObj.done;
                 
+                // --- HIGHEST WEIGHT/REPS ALL-TIME PR SCANNER ---
+                // Calculate this before building the HTML so we can put it at the top!
+                let bestSet = null;
+                
+                Object.keys(data.workouts).forEach(dateKey => {
+                    // Scan ALL past dates prior to the current selected date
+                    if (dateKey < state.selectedDateStr) {
+                        data.workouts[dateKey].forEach(w => {
+                            if (w.exId === ex.id) {
+                                w.sets.forEach(s => {
+                                    if (!bestSet) {
+                                        bestSet = { w: s.weight, r: s.reps };
+                                    } else {
+                                        // Priority 1: Highest Weight
+                                        if (s.weight > bestSet.w) {
+                                            bestSet = { w: s.weight, r: s.reps };
+                                        } 
+                                        // Priority 2: Same Weight, Highest Reps
+                                        else if (s.weight === bestSet.w && s.reps > bestSet.r) {
+                                            bestSet = { w: s.weight, r: s.reps };
+                                        }
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                // Generate the top PR Badge
+                let prBadgeHtml = bestSet ? 
+                    `<div class="text-[10px] font-bold tracking-wider px-2 py-1 rounded-md bg-yellow-500/10 text-yellow-500 flex items-center gap-1 border border-yellow-500/20">
+                        <span class="material-icons-round text-[12px]">emoji_events</span> PR: ${bestSet.w}kg × ${bestSet.r}
+                    </div>` : '';
+
                 const card = document.createElement('div');
                 card.className = `bg-[#1c1c1e] rounded-2xl overflow-hidden shadow-lg transition-all ${isCollapsed ? 'opacity-60 grayscale-[30%]' : ''}`;
                 
                 let html = `
-                    <div class="px-4 py-3.5 flex justify-between items-center border-b border-gray-800" style="border-top: 4px solid ${part.color}">
-                        <div>
+                    <div class="px-4 py-3.5 flex justify-between items-start border-b border-gray-800" style="border-top: 4px solid ${part.color}">
+                        <div class="flex-1 pr-2">
                             <h3 class="font-bold text-lg text-white">${ex.name}</h3>
-                            <div class="flex items-center gap-2 mt-1">
+                            <div class="flex flex-wrap items-center gap-2 mt-2">
                                 <span class="text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-md bg-gray-800 text-gray-300 active:scale-95 transition-transform" onclick="editNote(${wIndex})">
                                     ${workoutObj.note ? workoutObj.note : '+ ADD NOTE'}
                                 </span>
+                                ${prBadgeHtml}
                             </div>
                         </div>
                         <div class="flex gap-2">
@@ -704,41 +766,11 @@
                     html += `<div class="p-3">
                         <div class="set-row text-[10px] text-gray-500 font-bold tracking-widest px-2 mb-3">
                             <div class="text-center">SET</div>
-                            <div>PREVIOUS</div>
                             <div class="text-center">KG</div>
                             <div class="text-center">REPS</div>
                             <div class="text-center"><span class="material-icons-round text-[14px]">check</span></div>
                         </div>
                     `;
-
-                    // --- HIGHEST WEIGHT/REPS ALL-TIME PR SCANNER ---
-                    let bestSet = null;
-                    
-                    Object.keys(data.workouts).forEach(dateKey => {
-                        // Scan ALL past dates prior to the current selected date
-                        if (dateKey < state.selectedDateStr) {
-                            data.workouts[dateKey].forEach(w => {
-                                if (w.exId === ex.id) {
-                                    w.sets.forEach(s => {
-                                        if (!bestSet) {
-                                            bestSet = { w: s.weight, r: s.reps };
-                                        } else {
-                                            // Priority 1: Highest Weight
-                                            if (s.weight > bestSet.w) {
-                                                bestSet = { w: s.weight, r: s.reps };
-                                            } 
-                                            // Priority 2: Same Weight, Highest Reps
-                                            else if (s.weight === bestSet.w && s.reps > bestSet.r) {
-                                                bestSet = { w: s.weight, r: s.reps };
-                                            }
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
-                    
-                    let prevText = bestSet ? `${bestSet.w}kg × ${bestSet.r}` : "—";
 
                     workoutObj.sets.forEach((set, sIndex) => {
                         const setDoneClass = set.done ? 'bg-success/10 border-l-[3px] border-success rounded-r-lg' : 'border-l-[3px] border-transparent';
@@ -747,7 +779,6 @@
                         html += `
                             <div class="set-row p-1.5 mb-2 ${setDoneClass} transition-colors">
                                 <div class="text-center font-bold text-gray-400 text-sm">${sIndex + 1}</div>
-                                <div class="text-[11px] font-medium text-gray-500 truncate">${prevText}</div>
                                 
                                 <div class="number-spinner shadow-inner">
                                     <button onclick="updateSetVal(${wIndex}, ${sIndex}, 'weight', -2.5)">-</button>
@@ -761,7 +792,7 @@
                                     <button onclick="updateSetVal(${wIndex}, ${sIndex}, 'reps', 1)">+</button>
                                 </div>
                                 
-                                <button onclick="toggleSet(${wIndex}, ${sIndex})" class="w-[34px] h-[34px] rounded-[10px] mx-auto flex items-center justify-center transition-all ${checkBtnClass} active:scale-90">
+                                <button onclick="toggleSet(${wIndex}, ${sIndex})" class="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center transition-all ${checkBtnClass} active:scale-90">
                                     <span class="material-icons-round text-lg">check</span>
                                 </button>
                             </div>
